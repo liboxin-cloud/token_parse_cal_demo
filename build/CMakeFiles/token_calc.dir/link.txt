@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/token_calc.dir/test.c.o CMakeFiles/token_calc.dir/parser.c.o -o token_calc 
