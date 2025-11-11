@@ -1,6 +1,6 @@
 #include "parser.h"
 int main() {
-    char expr[] = "1.45 + 67.89";
+    char expr[] = "7222.2343 + 8.2131";
     input = expr;
     pos = 0;
     BigNum result = parse_expr();

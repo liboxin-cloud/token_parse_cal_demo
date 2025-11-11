@@ -16,57 +16,51 @@ void init_big_num(BigNum* big_num) {
 void num_to_string(BigNum* big_num, const char* str) {
     init_big_num(big_num);
     int start_pos = 0;
-    /*the point of the decimal dot*/
     const char* dot_pos = strchr(str, '.');
 
-    /*tell the sign of the num*/
-    if ('-' == str[0]) {
+    // å¤„ç†ç¬¦å·
+    if (str[0] == '-') {
         big_num->sign = -1;
         start_pos = 1;
     }
 
-
-    /*handle the decimal and integer part of the num*/
-    int integer_end_pos = (dot_pos != NULL) ? (dot_pos - str) : strlen(str);
-    /*reverse the big_num string and store every num into the array*/
-    for (int i = strlen(str) - 1;i >= start_pos;i--) {
-        if (str[i] < '0' || str[i] > '9') {
-            break;
-        }
-
+    // 1. è§£ææ•´æ•°éƒ¨åˆ†ï¼ˆä»å·¦åˆ°å³è¯»å–ï¼Œåè½¬åå­˜å‚¨ï¼Œç¡®ä¿ä½ä½åœ¨å‰ï¼‰
+    int integer_end = (dot_pos != NULL) ? (dot_pos - str) : strlen(str);
+    for (int i = integer_end - 1; i >= start_pos; i--) {  // æ•´æ•°éƒ¨åˆ†åè½¬å­˜å‚¨
+        if (str[i] < '0' || str[i] > '9') break;
         big_num->digits[big_num->len++] = str[i] - '0';
     }
 
-    if (NULL != dot_pos) {
-        int decimal_start_pos = integer_end_pos + 1;
-
-        for (int i = strlen(str) - 1;i >= decimal_start_pos;i--) {
-            if (str[i] < '0' || str[i] > '9') {
-                break;
-            }
-
+    // 2. è§£æå°æ•°éƒ¨åˆ†ï¼ˆä»å·¦åˆ°å³è¯»å–ï¼Œæ­£åºå­˜å‚¨ï¼Œä½ä½åœ¨å‰ï¼‰
+    if (dot_pos != NULL) {
+        int decimal_start = dot_pos - str + 1;
+        for (int i = decimal_start; i < strlen(str); i++) {  // å°æ•°éƒ¨åˆ†æ­£åºå­˜å‚¨
+            if (str[i] < '0' || str[i] > '9') break;
             big_num->digits[big_num->len++] = str[i] - '0';
             big_num->decimal_len++;
         }
-
-        /*reverse the decimal part of the num*/
-        for (int i = 0; i < big_num->decimal_len / 2; i++) {
-            int swap_idx = big_num->len - big_num->decimal_len + i;
-            int temp = big_num->digits[swap_idx];
-            big_num->digits[swap_idx] = big_num->digits[big_num->len - 1 - i];
-            big_num->digits[big_num->len - 1 - i] = temp;
-        }
     }
 
-    while (big_num->decimal_len > 0 && 
-        big_num->digits[big_num->decimal_len - 1] == 0) {
-        
+    // å»é™¤å°æ•°éƒ¨åˆ†å°¾éƒ¨çš„é›¶ï¼ˆå¦‚ "67.8900" å¤„ç†ä¸º "67.89"ï¼‰
+    while (big_num->decimal_len > 0 && big_num->digits[big_num->len - 1] == 0) {
         big_num->decimal_len--;
         big_num->len--;
     }
 
+    // å»é™¤æ•´æ•°éƒ¨åˆ†å‰å¯¼çš„é›¶ï¼ˆå¦‚ "0067.89" å¤„ç†ä¸º "67.89"ï¼‰
+    while (big_num->len > big_num->decimal_len + 1 && big_num->digits[big_num->len - 1] == 0) {
+        big_num->len--;
+    }
+
+    // åœ¨ num_to_string å‡½æ•°æœ«å°¾æ·»åŠ è°ƒè¯•ä¿¡æ¯
+    printf("è§£æå­—ç¬¦ä¸²: %s â†’ digits: [", str);
+    for (int i = 0; i < big_num->len; i++) {
+        printf("%d,", big_num->digits[i]);
+    }
+    printf("], len=%d, decimal_len=%d\n", big_num->len, big_num->decimal_len);
 
 }
+
 
 
 bool is_zero(const BigNum* num) {
@@ -125,6 +119,12 @@ void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
         return;
     }
 
+    // printf("num1 is:\n");
+    // print_big_num(num1);
+
+    // printf("num2 is:\n");
+    // print_big_num(num2);
+
     init_big_num(res);
     res->sign = num1->sign;
 
@@ -132,8 +132,16 @@ void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
     int max_decimal = (num1->decimal_len > num2->decimal_len) ?
     num1->decimal_len : num2->decimal_len;
 
-    BigNum a_padded = *num1;
-    BigNum b_padded = *num2;
+    BigNum a_padded;
+    copy_big_num(&a_padded, num1);
+    BigNum b_padded;
+    copy_big_num(&b_padded, num2);
+
+    printf("a_padded is:\n");
+    print_big_num(&a_padded);
+
+    printf("b_padded is:\n");
+    print_big_num(&b_padded);
 
     /***pad the decimal part of the num with 0*/
     while (a_padded.decimal_len < max_decimal) {
@@ -175,6 +183,9 @@ void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
         sub_big_num(num1, &b_neg, res);
         return;
     }
+
+    printf("add res is \n");
+    print_big_num(res);
 }
 
 BigNum parse_factor() {
@@ -201,19 +212,35 @@ BigNum parse_factor() {
 BigNum parse_expr() {
     BigNum left = parse_term();
 
+    printf("\n è§£ætermåleftçš„å€¼æ˜¯:");
+
+    print_big_num(&left);
+
     while (true) {
         Token op = next_token();
         if (TOKEN_PLUS == op.type) {
-            BigNum right = parse_term();
-            add_big_num(&left, &right, &left);
+BigNum right = parse_term();
+            printf("åŠ æ³•åçš„å³æ“ä½œæ•°:\n");
+            print_big_num(&right);
+
+            // å…³é”®ï¼šç”¨ä¸´æ—¶å˜é‡å­˜å‚¨ç»“æœï¼Œé¿å…è¦†ç›–left
+            BigNum temp;
+            add_big_num(&left, &right, &temp);  // è¾“å…¥æ˜¯leftï¼Œè¾“å‡ºæ˜¯temp
+            copy_big_num(&left, &temp);  // å®‰å…¨æ‹·è´ç»“æœå›left
         } else if (TOKEN_MINUS == op.type) {
             BigNum right = parse_term();
+            printf("å‡æ³•åçš„å³æ“ä½œæ•°:\n");
+            print_big_num(&right);
             sub_big_num(&left, &right, &left);
         } else {
             pos--;
             break;
         }
     }
+
+    printf("\n è§£æexpråleftçš„å€¼æ˜¯:");
+
+    print_big_num(&left);
 
     return left;
 }
@@ -314,7 +341,7 @@ void sub_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
 void multi_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
     init_big_num(res);
     res->sign = num1->sign * num2->sign;
-    res->decimal_len = num1->decimal_len + num2->decimal_len;  // Ğ¡ÊıÎ»ÊıÏà¼Ó
+    res->decimal_len = num1->decimal_len + num2->decimal_len; 
 
     for (int i = 0; i < num1->len; i++) {
         int carry = 0;
@@ -338,7 +365,7 @@ void multi_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
 }
 
 
-// ¸¨Öúº¯Êı£º¸ø´óÕûÊı²¹Áã£¨ÓÃÓÚ³ı·¨À©Õ¹Ğ¡ÊıÎ»£©
+
 void pad_zero(BigNum* num, int zeros) {
     for (int i = 0; i < zeros; i++) {
         num->digits[num->len++] = 0;
@@ -348,36 +375,36 @@ void pad_zero(BigNum* num, int zeros) {
 void div_big_num(const BigNum* num1, const BigNum* num2, BigNum* res, int max_decimal) {
     init_big_num(res);
     res->sign = num1->sign * num2->sign;
-    res->decimal_len = max_decimal;  // ½á¹û±£Áômax_decimalÎ»Ğ¡Êı
+    res->decimal_len = max_decimal;
 
-    // ´¦Àí³ıÊıÎª0
+
     if (is_zero(num2)) {
         perror("division by zero");
         return;
     }
 
-    // ×ªÎªÕûÊı³ı·¨£º(a * 10^max_decimal) / b
+
     BigNum a_padded = *num1;
     BigNum b_padded = *num2;
-    // ¶ÔÆë±»³ıÊıºÍ³ıÊıµÄĞ¡ÊıÎ»£¬²¢²¹ÁãÀ©Õ¹µ½max_decimalÎ»
+
     int shift = b_padded.decimal_len - a_padded.decimal_len + max_decimal;
     if (shift > 0) pad_zero(&a_padded, shift);
     else pad_zero(&b_padded, -shift);
 
-    // È¥³ıĞ¡Êıµã£¬°´ÕûÊı³ı·¨¼ÆËã
+
     BigNum quotient, remainder;
     integer_div(&a_padded, &b_padded, &quotient, &remainder);
 
-    // ÉÌµÄ³¤¶ÈĞèÖÁÉÙÎªmax_decimal£¨²»×ã²¹Áã£©
+
     while (quotient.len < max_decimal) {
         quotient.digits[quotient.len++] = 0;
     }
 
-    // ¸´ÖÆÉÌµ½½á¹û£¨ÕûÊı²¿·ÖÎªlen - decimal_len£¬Ğ¡Êı²¿·ÖÎªdecimal_len£©
+
     res->len = quotient.len;
     memcpy(res->digits, quotient.digits, quotient.len * sizeof(int));
 
-    // ËÄÉáÎåÈë£¨¼ò»¯´¦Àí£º×îºóÒ»Î» >=5 Ôò½ø1£©
+
     if (res->len > res->decimal_len && res->digits[res->decimal_len] >= 5) {
         int carry = 1;
         for (int i = res->decimal_len - 1; i >= 0 && carry; i--) {
@@ -390,7 +417,7 @@ void div_big_num(const BigNum* num1, const BigNum* num2, BigNum* res, int max_de
             }
         }
         if (carry) {
-            res->digits[res->len++] = 1;  // ½øÎ»µ½ÕûÊı²¿·Ö
+            res->digits[res->len++] = 1;
         }
     }
 }
@@ -398,24 +425,24 @@ void div_big_num(const BigNum* num1, const BigNum* num2, BigNum* res, int max_de
 void integer_div(const BigNum* num1, const BigNum* num2, BigNum* quotient, BigNum* remainder) {
     init_big_num(quotient);
     init_big_num(remainder);
-    quotient->decimal_len = 0;  // ÉÌÎªÕûÊı
-    remainder->decimal_len = 0; // ÓàÊıÎªÕûÊı
+    quotient->decimal_len = 0;
+    remainder->decimal_len = 0;
 
-    // Èô±»³ıÊıĞ¡ÓÚ³ıÊı£¬ÉÌÎª0£¬ÓàÊıÎª±»³ıÊı
+
     if (compare_abs(num1, num2) < 0) {
         copy_big_num(remainder, num1);
         return;
     }
 
     BigNum dividend;
-    copy_big_num(&dividend, num1);  // ¸´ÖÆ±»³ıÊı£¬±ÜÃâĞŞ¸ÄÔ­Êı¾İ
+    copy_big_num(&dividend, num1);
 
-    // ¼ÆËãÉÌµÄÎ»Êı£¨±»³ıÊı³¤¶È - ³ıÊı³¤¶È£©
+
     int shift = dividend.len - num2->len;
     BigNum divisor_shifted;
     copy_big_num(&divisor_shifted, num2);
 
-    // ½«³ıÊı×óÒÆ shift Î»£¨Ïàµ±ÓÚ³ËÒÔ 10^shift£©£¬Óë±»³ıÊı¶ÔÆë
+
     if (shift > 0) {
         for (int i = divisor_shifted.len - 1; i >= 0; i--) {
             divisor_shifted.digits[i + shift] = divisor_shifted.digits[i];
@@ -426,45 +453,54 @@ void integer_div(const BigNum* num1, const BigNum* num2, BigNum* quotient, BigNu
         divisor_shifted.len += shift;
     }
 
-    // ÖğÎ»¼ÆËãÉÌ
+
     for (int i = 0; i <= shift; i++) {
         int count = 0;
-        // Ñ­»·¼õÈ¥³ıÊı£¬Í³¼Æ´ÎÊı£¨¼´µ±Ç°Î»µÄÉÌ£©
+
         while (compare_abs(&dividend, &divisor_shifted) >= 0) {
             BigNum temp;
             sub_abs(&dividend, &divisor_shifted, &temp);
             copy_big_num(&dividend, &temp);
             count++;
         }
-        // ¼ÇÂ¼µ±Ç°Î»µÄÉÌ£¨´Ó¸ßÎ»µ½µÍÎ»´æ´¢£©
+
         quotient->digits[shift - i] = count;
         quotient->len = shift - i + 1;
 
-        // ³ıÊıÓÒÒÆÒ»Î»£¨Ïàµ±ÓÚ³ıÒÔ 10£©£¬×¼±¸¼ÆËãÏÂÒ»Î»ÉÌ
+
         for (int j = 0; j < divisor_shifted.len - 1; j++) {
             divisor_shifted.digits[j] = divisor_shifted.digits[j + 1];
         }
         divisor_shifted.len--;
-        // È¥³ıÓÒÒÆºóµÄÇ°µ¼Áã
+
         while (divisor_shifted.len > 0 && divisor_shifted.digits[divisor_shifted.len - 1] == 0) {
             divisor_shifted.len--;
         }
     }
 
-    // ×îÖÕÓàÊıÎª±»³ıÊıÊ£ÓàÖµ
     copy_big_num(remainder, &dividend);
 }
 
-void copy_big_num(BigNum* num1, const BigNum* num2) {
-    init_big_num( num1);
-    num1->sign = num2->sign;
-    num1->len = num2->len;
-    num1->decimal_len = num2->decimal_len;
+void copy_big_num(BigNum* dest, const BigNum* src) {
+    init_big_num(dest);
 
-    for (int i = 0; i < num2->len; i++) {
-        num1->digits[i] = num2->digits[i];
+    dest->sign = src->sign;
+    dest->len = src->len;
+    dest->decimal_len = src->decimal_len;
+
+    for (int i = 0; i < src->len; i++) {
+        dest->digits[i] = src->digits[i];
     }
 
+    printf("copy_big_num src: digits=[");
+    for (int i=0; i<src->len; i++) printf("%d,", src->digits[i]);
+    printf("], len=%d, decimal_len=%d\n", src->len, src->decimal_len);
+
+    printf("æ‹·è´ådest: digits=[");
+    for (int i = 0; i < dest->len; i++) {
+        printf("%d,", dest->digits[i]);
+    }
+    printf("], len=%d, decimal_len=%d\n", dest->len, src->decimal_len);
 }
 
 void print_big_num(const BigNum* num) {
@@ -473,24 +509,29 @@ void print_big_num(const BigNum* num) {
     }
 
     int integer_len = num->len - num->decimal_len;
+
+
+    // æ‰“å°æ•´æ•°éƒ¨åˆ†ï¼ˆå­˜å‚¨æ—¶ä½ä½åœ¨å‰ï¼Œæ‰“å°æ—¶éœ€ä»é«˜ä½åˆ°ä½ä½ï¼‰
     if (integer_len <= 0) {
-        printf("0");  // ÕûÊı²¿·ÖÎª0
+        printf("0");  // æ•´æ•°éƒ¨åˆ†ä¸º0
     } else {
-        // ´òÓ¡ÕûÊı²¿·Ö£¨¸ßÎ»µ½µÍÎ»£©
-        for (int i = num->len - 1; i >= num->decimal_len; i--) {
+        // æ•´æ•°éƒ¨åˆ†å­˜å‚¨åœ¨ digits[decimal_len ... len-1]ï¼Œéœ€é€†åºæ‰“å°
+        for (int i = integer_len - 1; i >= 0; i--) {
             printf("%d", num->digits[i]);
         }
     }
 
-    // ´òÓ¡Ğ¡Êı²¿·Ö
+    // æ‰“å°å°æ•°éƒ¨åˆ†ï¼ˆå­˜å‚¨æ—¶é«˜ä½åœ¨å‰ï¼Œç›´æ¥é¡ºåºæ‰“å°ï¼‰
     if (num->decimal_len > 0) {
         printf(".");
-        for (int i = num->decimal_len - 1; i >= 0; i--) {
+        // å°æ•°éƒ¨åˆ†å­˜å‚¨åœ¨ digits[0 ... decimal_len-1]ï¼Œç›´æ¥æŒ‰é¡ºåºæ‰“å°
+        for (int i = integer_len; i < num->len; i++) {
             printf("%d", num->digits[i]);
         }
     }
     printf("\n");
 }
+
 
 void sub_abs(const BigNum* num1, const BigNum* num2, BigNum* res) {
     init_big_num(res);

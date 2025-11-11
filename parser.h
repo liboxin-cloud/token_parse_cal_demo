@@ -47,7 +47,7 @@ Token next_token();
 bool is_zero(const BigNum* num);
 
 /*copy the big num*/
-void copy_big_num(BigNum* num1, const BigNum* num2);
+void copy_big_num(BigNum* dest, const BigNum* src);
 
 /*abs substract function*/
 void sub_abs(const BigNum* a, const BigNum* b, BigNum* res);
