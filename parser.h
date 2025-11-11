@@ -1,16 +1,18 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define NUM_MAX 1024
 
-char* input;
-int pos;
+extern char* input;
+extern int pos;
 
 /*the struct of the big_num*/
 typedef struct BigNum {
     int digits[NUM_MAX];    /*the big num array*/
     int len;                /*the length of the big_num*/
     int sign;               /*the sign of the big num*/
+    int decimal_len;        /*the length of the decimal part*/
 }BigNum;
 
 
@@ -41,6 +43,21 @@ void num_to_string(BigNum* big_num, const char* str);
 /*extract the token from the expression string*/
 Token next_token();
 
+/*tell the num is zero*/
+bool is_zero(const BigNum* num);
+
+/*copy the big num*/
+void copy_big_num(BigNum* num1, const BigNum* num2);
+
+/*abs substract function*/
+void sub_abs(const BigNum* a, const BigNum* b, BigNum* res);
+
+/*integer div function*/
+void integer_div(const BigNum* num1, const BigNum* num2, BigNum* quotient, BigNum* remainder);
+
+/*compare two integers which is bigger*/
+int compare_abs(const BigNum* num1, const BigNum* num2);
+
 /*the add of the big num*/
 void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res);
 
@@ -51,7 +68,10 @@ void sub_big_num(const BigNum* num1, const BigNum* num2, BigNum* res);
 void multi_big_num(const BigNum* num1, const BigNum* num2, BigNum* res);
 
 /*the div of the big num*/
-void div_big_num(const BigNum* num1, const BigNum* num2, BigNum* res);
+void div_big_num(const BigNum* num1, const BigNum* num2, BigNum* res, int max_decimal);
+
+/*parse the term*/
+BigNum parse_term();
 
 /*parse the factors*/
 BigNum parse_factor();
@@ -59,6 +79,7 @@ BigNum parse_factor();
 /*parse the expression*/
 BigNum parse_expr();
 
-/*parse the term*/
-BigNum parse_term();
+/*print the big num*/
+void print_big_num(const BigNum* num);
+
 
