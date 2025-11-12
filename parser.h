@@ -13,6 +13,7 @@ typedef struct BigNum {
     int len;                /*the length of the big_num*/
     int sign;               /*the sign of the big num*/
     int decimal_len;        /*the length of the decimal part*/
+    int decimal_pos;        /*the position of the decimal dot*/
 }BigNum;
 
 

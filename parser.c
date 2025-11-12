@@ -2,6 +2,8 @@
 
 char* input = NULL;
 int pos = 0;
+int max_len = 0;
+
 void init_big_num(BigNum* big_num) {
     for (int i = 0;i < NUM_MAX;i++) {
         big_num->digits[i] = 0;
@@ -11,6 +13,7 @@ void init_big_num(BigNum* big_num) {
     big_num->sign = 1;
     /***the decimal length of the big num, and default is integer*/
     big_num->decimal_len = 0;
+    big_num->decimal_pos = 0;
 }
 
 void num_to_string(BigNum* big_num, const char* str) {
@@ -18,47 +21,36 @@ void num_to_string(BigNum* big_num, const char* str) {
     int start_pos = 0;
     const char* dot_pos = strchr(str, '.');
 
-    // 处理符号
     if (str[0] == '-') {
         big_num->sign = -1;
         start_pos = 1;
     }
 
-    // 1. 解析整数部分（从左到右读取，反转后存储，确保低位在前）
-    int integer_end = (dot_pos != NULL) ? (dot_pos - str) : strlen(str);
-    for (int i = integer_end - 1; i >= start_pos; i--) {  // 整数部分反转存储
-        if (str[i] < '0' || str[i] > '9') break;
+    // for (int i = strlen(str) - 1;i >= 0;i--) {
+    //     big_num->digits[big_num->decimal_len++] = str[i];
+    // }
+
+    if (NULL != dot_pos) {
+        big_num->decimal_pos = (dot_pos - str);
+    }
+
+
+    for (int i = strlen(str) - 1;i >= 0;i--) {
+        if (str[i] == '.') {
+            continue;
+        }
         big_num->digits[big_num->len++] = str[i] - '0';
     }
 
-    // 2. 解析小数部分（从左到右读取，正序存储，低位在前）
-    if (dot_pos != NULL) {
-        int decimal_start = dot_pos - str + 1;
-        for (int i = decimal_start; i < strlen(str); i++) {  // 小数部分正序存储
-            if (str[i] < '0' || str[i] > '9') break;
-            big_num->digits[big_num->len++] = str[i] - '0';
-            big_num->decimal_len++;
-        }
-    }
 
-    // 去除小数部分尾部的零（如 "67.8900" 处理为 "67.89"）
-    while (big_num->decimal_len > 0 && big_num->digits[big_num->len - 1] == 0) {
-        big_num->decimal_len--;
-        big_num->len--;
-    }
-
-    // 去除整数部分前导的零（如 "0067.89" 处理为 "67.89"）
-    while (big_num->len > big_num->decimal_len + 1 && big_num->digits[big_num->len - 1] == 0) {
-        big_num->len--;
-    }
+    
 
     // 在 num_to_string 函数末尾添加调试信息
     printf("解析字符串: %s → digits: [", str);
     for (int i = 0; i < big_num->len; i++) {
         printf("%d,", big_num->digits[i]);
     }
-    printf("], len=%d, decimal_len=%d\n", big_num->len, big_num->decimal_len);
-
+    printf("], len=%d, decimal_len=%d, decimal_pos: %d\n", big_num->len, big_num->decimal_len, big_num->decimal_pos);
 }
 
 
@@ -119,11 +111,7 @@ void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
         return;
     }
 
-    // printf("num1 is:\n");
-    // print_big_num(num1);
-
-    // printf("num2 is:\n");
-    // print_big_num(num2);
+    printf("add big_num function is called\n");
 
     init_big_num(res);
     res->sign = num1->sign;
@@ -159,6 +147,8 @@ void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
     if (num1->sign == num2->sign) {
         int carry = 0;
         int max_len = (a_padded.len > b_padded.len) ? a_padded.len : b_padded.len;
+        int max_decimal_len = ((a_padded.len - a_padded.decimal_pos) > (b_padded.len - b_padded.decimal_pos)) ?
+        (a_padded.len - a_padded.decimal_pos) : (b_padded.len - b_padded.decimal_pos);
     
         for (int i = 0;i < max_len;i++) {
             int sum = carry;
@@ -170,6 +160,7 @@ void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
                 sum += b_padded.digits[i];
             }
 
+
             res->digits[res->len++] = sum % 10;
             carry = sum / 10;
         }
@@ -177,6 +168,11 @@ void add_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
             res->digits[res->len++] = carry;
         }
         res->decimal_len = max_decimal;
+        res->decimal_pos = (num1->decimal_pos > num2->decimal_pos) ? 
+        num1->decimal_pos : num2->decimal_pos;
+
+        printf("res decimal pos is %d\n", res->decimal_pos);
+
     } else {
         BigNum b_neg = *num2;
         b_neg.sign *= -1;
@@ -219,7 +215,7 @@ BigNum parse_expr() {
     while (true) {
         Token op = next_token();
         if (TOKEN_PLUS == op.type) {
-BigNum right = parse_term();
+            BigNum right = parse_term();
             printf("加法后的右操作数:\n");
             print_big_num(&right);
 
@@ -487,47 +483,59 @@ void copy_big_num(BigNum* dest, const BigNum* src) {
     dest->sign = src->sign;
     dest->len = src->len;
     dest->decimal_len = src->decimal_len;
+    dest->decimal_pos = src->decimal_pos;
+
+    /*copy_big_num(&a_padded, num1);*/
 
     for (int i = 0; i < src->len; i++) {
         dest->digits[i] = src->digits[i];
     }
 
-    printf("copy_big_num src: digits=[");
-    for (int i=0; i<src->len; i++) printf("%d,", src->digits[i]);
-    printf("], len=%d, decimal_len=%d\n", src->len, src->decimal_len);
+    // printf("copy_big_num src: digits=[");
+    // for (int i=0; i<src->len; i++) printf("%d,", src->digits[i]);
+    // printf("], len=%d, decimal_len=%d\n", src->len, src->decimal_len);
 
-    printf("拷贝后dest: digits=[");
-    for (int i = 0; i < dest->len; i++) {
-        printf("%d,", dest->digits[i]);
-    }
-    printf("], len=%d, decimal_len=%d\n", dest->len, src->decimal_len);
+    // printf("拷贝后dest: digits=[");
+    // for (int i = 0; i < dest->len; i++) {
+    //     printf("%d,", dest->digits[i]);
+    // }
+    // printf("], len=%d, decimal_len=%d\n", dest->len, src->decimal_len);
 }
 
 void print_big_num(const BigNum* num) {
     if (num->sign == -1 && !is_zero(num)) {
-        printf("-");
+        printf("-");    
     }
 
-    int integer_len = num->len - num->decimal_len;
+    // int integer_len = num->len - num->decimal_len;
 
 
-    // 打印整数部分（存储时低位在前，打印时需从高位到低位）
-    if (integer_len <= 0) {
-        printf("0");  // 整数部分为0
-    } else {
-        // 整数部分存储在 digits[decimal_len ... len-1]，需逆序打印
-        for (int i = integer_len - 1; i >= 0; i--) {
-            printf("%d", num->digits[i]);
+    // // 打印整数部分（存储时低位在前，打印时需从高位到低位）
+    // if (integer_len <= 0) {
+    //     printf("0");  // 整数部分为0
+    // } else {
+    //     // 整数部分存储在 digits[decimal_len ... len-1]，需逆序打印
+    //     for (int i = integer_len - 1; i >= 0; i--) {
+    //         printf("%d", num->digits[i]);
+    //     }
+    // }
+
+    // // 打印小数部分（存储时高位在前，直接顺序打印）
+    // if (num->decimal_pos > 0) {
+    //     printf(".");
+    //     // 小数部分存储在 digits[0 ... decimal_len-1]，直接按顺序打印
+    //     for (int i = integer_len; i < num->len; i++) {
+    //         printf("%d", num->digits[i]);
+    //     }
+    // }
+
+
+
+    for (int i = num->len - 1;i >= 0;i--) {
+        if (i == num->len - num->decimal_pos - 1) {
+            printf(".");
         }
-    }
-
-    // 打印小数部分（存储时高位在前，直接顺序打印）
-    if (num->decimal_len > 0) {
-        printf(".");
-        // 小数部分存储在 digits[0 ... decimal_len-1]，直接按顺序打印
-        for (int i = integer_len; i < num->len; i++) {
-            printf("%d", num->digits[i]);
-        }
+        printf("%d", num->digits[i]);
     }
     printf("\n");
 }
