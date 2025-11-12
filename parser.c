@@ -2,7 +2,7 @@
 
 char* input = NULL;
 int pos = 0;
-int max_len = 0;
+int max_len = 16;
 
 void init_big_num(BigNum* big_num) {
     for (int i = 0;i < NUM_MAX;i++) {
@@ -26,27 +26,53 @@ void num_to_string(BigNum* big_num, const char* str) {
         start_pos = 1;
     }
 
-    // for (int i = strlen(str) - 1;i >= 0;i--) {
-    //     big_num->digits[big_num->decimal_len++] = str[i];
-    // }
+    char m_str[NUM_MAX];
+
+    strcpy(m_str, str);
+    //printf("after strcpy, m_str is %s\n", m_str);
+
+    int decimal_len = strlen(str) - (dot_pos - str) - 1;
+    printf("the decimal len is %d\n", decimal_len);
+
+    for (int i = 0;i < max_len - decimal_len;i++) {
+        m_str[strlen(str) + i] = 0 + '0';
+    }
+
+    //printf("%s", m_str);
+
+    //printf("the start of the m_str is %d, the char is %c\n", strlen(str) - pos, str[strlen(str) - pos]);
+
+
+
+
 
     if (NULL != dot_pos) {
         big_num->decimal_pos = (dot_pos - str);
     }
 
 
-    for (int i = strlen(str) - 1;i >= 0;i--) {
-        if (str[i] == '.') {
+    for (int i = strlen(m_str) - 1;i >= 0;i--) {
+        if (m_str[i] == '.') {
             continue;
         }
-        big_num->digits[big_num->len++] = str[i] - '0';
+        big_num->digits[big_num->len++] = m_str[i] - '0';
     }
+
+    // if (max_len >= big_num->len) {
+    //     int len_temp = big_num->len;
+    //     for (int i = 0;i < max_len - len_temp;i++) {
+    //         big_num->digits[big_num->len++] = 0;
+    //     }
+    // } else {
+    //     perror("the length of the num is too long\n");
+    //     return;
+    // }
 
 
     
 
     // 在 num_to_string 函数末尾添加调试信息
-    printf("解析字符串: %s → digits: [", str);
+    printf("解析字符串: %s → digits: [", m_str);
     for (int i = 0; i < big_num->len; i++) {
         printf("%d,", big_num->digits[i]);
     }
@@ -227,7 +253,10 @@ BigNum parse_expr() {
             BigNum right = parse_term();
             printf("减法后的右操作数:\n");
             print_big_num(&right);
-            sub_big_num(&left, &right, &left);
+            
+            BigNum temp;
+            sub_big_num(&left, &right, &temp);  // 输入是left，输出是temp
+            copy_big_num(&left, &temp);
         } else {
             pos--;
             break;
