@@ -31,27 +31,32 @@ void num_to_string(BigNum* big_num, const char* str) {
     strcpy(m_str, str);
     //printf("after strcpy, m_str is %s\n", m_str);
 
+
     int decimal_len = strlen(str) - (dot_pos - str) - 1;
+    if (NULL == dot_pos) {
+        decimal_len = 0;
+    }
+
+    
     printf("the decimal len is %d\n", decimal_len);
+    int num_len = strlen(str) + max_len - decimal_len;
+
+    printf("the num's len is %d\n", num_len);
 
     for (int i = 0;i < max_len - decimal_len;i++) {
         m_str[strlen(str) + i] = 0 + '0';
     }
 
-    //printf("%s", m_str);
+    printf("m_str is %s, m_str len is %d\n", m_str, (int)strlen(m_str));
 
     //printf("the start of the m_str is %d, the char is %c\n", strlen(str) - pos, str[strlen(str) - pos]);
-
-
-
-
 
     if (NULL != dot_pos) {
         big_num->decimal_pos = (dot_pos - str);
     }
 
 
-    for (int i = strlen(m_str) - 1;i >= 0;i--) {
+    for (int i = num_len - 1;i >= 0;i--) {
         if (m_str[i] == '.') {
             continue;
         }
@@ -254,7 +259,12 @@ BigNum parse_expr() {
             printf("减法后的右操作数:\n");
             print_big_num(&right);
             
+            printf("left operator num is\n");
+            print_big_num(&left);
+
             BigNum temp;
+
+            /*something wrong in sub_big_num function*/
             sub_big_num(&left, &right, &temp);  // 输入是left，输出是temp
             copy_big_num(&left, &temp);
         } else {
@@ -313,16 +323,21 @@ int compare_abs(const BigNum* num1, const BigNum* num2) {
 
 
 void sub_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
-    if (NULL == num1 || NULL == num2) {
-        perror("num1 or num2 is NULL!!\n");
+    if (NULL == num1 || NULL == num2 || NULL == res) {
+        perror("num1, num2 or res is NULL!!\n");
         return;
     }
+
+    res->len = 0;
+    res->sign = 1;
+    res->decimal_len = 0;
 
     int max_decimal = (num1->decimal_len > num2->decimal_len) ? num1->decimal_len : num2->decimal_len;
     BigNum a_padded = *num1;
     BigNum b_padded = *num2;
+
     while (a_padded.decimal_len < max_decimal) {
-        a_padded.digits[a_padded.len++] = 0;
+        a_padded.digits[a_padded.len++] = 0; 
         a_padded.decimal_len++;
     }
     while (b_padded.decimal_len < max_decimal) {
@@ -332,21 +347,23 @@ void sub_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
 
     if (num1->sign != num2->sign) {
         BigNum b_neg = *num2;
-        b_neg.sign *= -1;
+        b_neg.sign = -b_neg.sign;
         add_big_num(num1, &b_neg, res);
         return;
     }
 
-    /*the sign is same*/
-
-    BigNum* larger = (compare_abs(&a_padded, &b_padded) >= 0) ? &a_padded : &b_padded;
+    int cmp = compare_abs(&a_padded, &b_padded);
+    BigNum* larger = (cmp >= 0) ? &a_padded : &b_padded;
     BigNum* smaller = (larger == &a_padded) ? &b_padded : &a_padded;
     res->sign = (larger == &a_padded) ? num1->sign : -num1->sign;
 
     int borrow = 0;
-    for (int i = 0; i < larger->len; i++) {
-        int digit = larger->digits[i] - borrow;
-        if (i < smaller->len) digit -= smaller->digits[i];
+    int max_len = (larger->len > smaller->len) ? larger->len : smaller->len;
+    for (int i = 0; i < max_len; i++) {
+        int digit = borrow ? (larger->digits[i] - 1) : larger->digits[i];
+        if (i < smaller->len) {
+            digit -= smaller->digits[i];
+        }
         if (digit < 0) {
             digit += 10;
             borrow = 1;
@@ -355,13 +372,18 @@ void sub_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
         }
         res->digits[res->len++] = digit;
     }
+    // 处理最后的借位（若有）
+    if (borrow) {
+        res->digits[res->len++] = 10 - borrow;
+    }
+
     res->decimal_len = max_decimal;
 
-    /*remove the front zero*/
     while (res->len > 1 && res->digits[res->len - 1] == 0) {
         res->len--;
     }
 }
+
 
 void multi_big_num(const BigNum* num1, const BigNum* num2, BigNum* res) {
     init_big_num(res);
