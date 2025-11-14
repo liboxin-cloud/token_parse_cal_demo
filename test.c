@@ -2,7 +2,7 @@
 
 
 int main() {
-    char expr[] = "72.2343 + 2 - (1 + 2) + 1.1";
+    char expr[] = "2 * 2";
     input = expr;
     pos = 0;
     BigNum result = parse_expr();
